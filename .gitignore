@@ -1,0 +1,11 @@
+/input/
+/input/
+*.csv
+*.pkl
+*.p
+*.h5
+./log
+*.parquet
+*.code-workspace
+*.pyc
+/log/
