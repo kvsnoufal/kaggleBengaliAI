@@ -5,10 +5,11 @@ import pandas as pd
 import joblib
 from PIL import Image
 import albumentations
+from albumentations import *
 
 
 class BengaliData(Sequence):
-    def __init__(self,folds,img_height,img_width,mean,std, batch_size=64,shuffle=True):
+    def __init__(self,folds,img_height,img_width,height_scaled,width_scaled,mean,std, batch_size=64,shuffle=True):
         df=pd.read_csv("../input/train_folds.csv")
         # print(df.shape)
         df=df[["image_id","grapheme_root","vowel_diacritic","consonant_diacritic","kfold"]]
@@ -23,20 +24,41 @@ class BengaliData(Sequence):
 
         if (len(folds)==1):
             self.aug=albumentations.Compose([
-                # albumentations.Resize(img_height,img_width,always_apply=True),
+                albumentations.Resize(height_scaled,width_scaled,always_apply=True),
                 albumentations.Normalize(mean,std,always_apply=True)
             ])
         else:
             self.aug=albumentations.Compose([
-                # albumentations.Resize(img_height,img_width,always_apply=True),
-                albumentations.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.1,rotate_limit=10, p=0.9), 
-                albumentations.RandomContrast(limit=0.2, p=0.5),
-                albumentations.RandomGamma(gamma_limit=(80, 120), p=0.5),
-                albumentations.RandomBrightness(limit=0.2, p=0.5),
-                albumentations.HueSaturationValue(hue_shift_limit=5, sat_shift_limit=20,
-                                val_shift_limit=10, p=.9),
+                albumentations.Resize(height_scaled,width_scaled,always_apply=True),
+                # RandomRotate90(),
+                # Flip(),
+                # Transpose(),
+                # OneOf([
+                #     IAAAdditiveGaussianNoise(),
+                #     GaussNoise(),
+                # ], p=0.2),
+                # OneOf([
+                #     MotionBlur(p=0.2),
+                #     MedianBlur(blur_limit=3, p=0.1),
+                #     Blur(blur_limit=3, p=0.1),
+                # ], p=0.2),
+                # ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=45, p=0.2),
+                # OneOf([
+                #     OpticalDistortion(p=0.3),
+                #     GridDistortion(p=0.1),
+                #     IAAPiecewiseAffine(p=0.3),
+                # ], p=0.2),
+                # OneOf([
+                #     # CLAHE(clip_limit=2),
+                #     IAASharpen(),
+                #     IAAEmboss(),
+                #     RandomBrightnessContrast(),]),
+                albumentations.Cutout(num_holes=8, max_h_size=40, max_w_size=20, fill_value=0, always_apply=False, p=0.5),
+                CoarseDropout(max_holes=8, max_height=40, max_width=20, p=0.5),
         
                 albumentations.Normalize(mean,std,always_apply=True),
+                    # HorizontalFlip(),
+                
 
             ])
 

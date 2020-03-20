@@ -1,13 +1,12 @@
 import tensorflow as tf
 # from tensorflow import keras
-from tensorflow.keras.applications.resnet import ResNet50
-from tensorflow.keras.applications.resnet_v2 import ResNet50V2
-from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras import layers
-from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
-from tensorflow.keras.applications.inception_v3 import InceptionV3
-from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
-from tensorflow.keras import utils
+from keras.applications.resnet import ResNet50
+from keras.applications.resnet_v2 import ResNet50V2
+from keras.models import Model, Sequential
+from keras import layers
+from keras.applications.mobilenet_v2 import MobileNetV2
+from keras.applications.inception_v3 import InceptionV3
+from keras.applications.inception_resnet_v2 import InceptionResNetV2
 # import tensorflow as tf
 # from tensorflow import keras
 
@@ -97,8 +96,6 @@ class MobilenetV2_:
         WIDTH = 236
         HEIGHT_NEW = int(HEIGHT * FACTOR)
         WIDTH_NEW = int(WIDTH * FACTOR)
-        HEIGHT_NEW = 137
-        WIDTH_NEW = 236
         
         base_model=MobileNetV2(include_top=False, weights='imagenet',  input_shape=(HEIGHT_NEW,WIDTH_NEW,3), pooling=None, classes=1000)
         # base_model.trainable=False
@@ -252,11 +249,11 @@ class effnetB3:
         WIDTH = 236
         HEIGHT_NEW = int(HEIGHT * FACTOR)
         WIDTH_NEW = int(WIDTH * FACTOR)
-        HEIGHT_NEW = 137
-        WIDTH_NEW = 236
+        HEIGHT_NEW = 128
+        WIDTH_NEW = 128
 
         # base_model=EfficientNetB3(include_top=False, weights='imagenet',input_shape=(HEIGHT_NEW,WIDTH_NEW,3))
-        base_model=efn.EfficientNetB3(include_top=False, weights='imagenet',input_shape=(HEIGHT_NEW,WIDTH_NEW,3))
+        base_model=efn.EfficientNetB2(include_top=False, weights='imagenet',input_shape=(HEIGHT_NEW,WIDTH_NEW,3))
         # base_model.trainable=False
         x = base_model.output
         x = layers.GlobalAveragePooling2D()(x)
@@ -277,41 +274,6 @@ class effnetB3:
                     metrics={'root' : 'accuracy', 
                     'vowel' : 'accuracy', 
                     'consonant': 'accuracy'})
-        print(model.summary())
-
-        return model
-
-from tensorflow.keras.applications.densenet import DenseNet121
-tf.debugging.set_log_device_placement(True)
-
-strategy = tf.distribute.MirroredStrategy()
-class dnet121:
-    def __init__(self):
-        
-        
-        self.model=self.load_model()
-        
-
-    def load_model(self):
-        FACTOR = 0.70
-        HEIGHT = 137
-        WIDTH = 236
-        HEIGHT_NEW = int(HEIGHT * FACTOR)
-        WIDTH_NEW = int(WIDTH * FACTOR)
-        HEIGHT_NEW = 224
-        WIDTH_NEW = 224
-    
-        # base_model=EfficientNetB3(include_top=False, weights='imagenet',input_shape=(HEIGHT_NEW,WIDTH_NEW,3))
-        base_model=DenseNet121(include_top=False, weights='imagenet',\
-            input_shape=(HEIGHT_NEW,WIDTH_NEW,3))
-        # base_model.trainable=False
-        
-        model = Model(inputs=base_model.input,outputs = [grapheme_root, vowel_diacritic, consonant_diacritic])
-        # for layer in base_model.layers:
-        #     layer.trainable = True
-        # model=utils.multi_gpu_model(model,gpus=2)
-        
-    
         print(model.summary())
 
         return model

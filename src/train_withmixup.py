@@ -8,9 +8,7 @@ import pickle
 from modelDispatcher import modelDispatcher
 from sklearn.metrics import recall_score
 import numpy as np
-from tensorflow.keras import utils
-# import os
-# os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
+from mixupAug import MixupImageDataGenerator
 
 
 EPOCHS=int(os.environ.get("EPOCHS"))
@@ -31,7 +29,6 @@ HEIGHT_NEW = int(HEIGHT * FACTOR)
 WIDTH_NEW = int(WIDTH * FACTOR)
 HEIGHT_NEW = 224
 WIDTH_NEW = 224
-
 
 def macro_recall(y_true, y_pred):
     return recall_score(y_true, y_pred, average='macro')
@@ -71,30 +68,20 @@ class CustomCallback(Callback):
             print(f"Avg. Recall: {round(avg_result, 4)}")
             self.model.save_weights(f'../log/best_avg_recall_{MODEL}_{TEST_FOLDS[0]}.h5')
         return
-import tensorflow as tf
-tf.debugging.set_log_device_placement(True)
 
-strategy = tf.distribute.MirroredStrategy()
+
 if __name__ == "__main__":
-    with strategy.scope():
-        model=modelDispatcher[MODEL]().model
-        # model.load_weights(f'../log/train_{MODEL}_{TEST_FOLDS[0]}.h5')
-        model.compile(optimizer='adam', loss = {'root' : 'categorical_crossentropy', 
-                        'vowel' : 'categorical_crossentropy', 
-                        'consonant': 'categorical_crossentropy'},
-                        loss_weights = {'root' : 0.5,
-                                'vowel' : 0.25,
-                                'consonant': 0.25},
-                        metrics={'root' : 'accuracy', 
-                        'vowel' : 'accuracy', 
-                        'consonant': 'accuracy'})
+    model=modelDispatcher[MODEL]().model
+    # model.load_weights(f'../log/train_{MODEL}_{TEST_FOLDS[0]}.h5')
     
 
     train_gen=BengaliData(folds=TRAIN_FOLDS,img_height=137,img_width=236,height_scaled=HEIGHT_NEW,width_scaled=WIDTH_NEW,mean=(0.485,0.456,0.406),std=(0.229,0.224,0.225),batch_size=BATCH_SIZE)
     valid_gen=BengaliData(folds=TEST_FOLDS,img_height=137,img_width=236,height_scaled=HEIGHT_NEW,width_scaled=WIDTH_NEW,mean=(0.485,0.456,0.406),std=(0.229,0.224,0.225),batch_size=BATCH_SIZE)
+    train_generator = MixupImageDataGenerator(train_gen,batch_size=BATCH_SIZE)
+    validation_generator = MixupImageDataGenerator(valid_gen,batch_size=BATCH_SIZE)
 
     reduceLR = ReduceLROnPlateau(monitor = 'val_root_loss',
-                             patience = 4,
+                             patience = 2,
                              factor = 0.1,
                              min_lr = 1e-16,
                              verbose = 1)
@@ -109,7 +96,7 @@ if __name__ == "__main__":
     # Callback : Early Stop
     earlyStop = EarlyStopping(monitor='val_root_loss',
                             mode = 'auto',
-                            patience = 10,
+                            patience = 4,
                             min_delta = 0,
                             verbose = 2)
     csv_logger = CSVLogger(f'../log/csvLog_{MODEL}_{TEST_FOLDS[0]}.csv')
@@ -117,11 +104,10 @@ if __name__ == "__main__":
     custom_callback = CustomCallback(valid_gen)
     CALLBACKS = [reduceLR, chkPoint, earlyStop,csv_logger]
 
-    train_history = model.fit_generator(train_gen,epochs=EPOCHS,\
+    train_history = model.fit_generator(train_generator,epochs=EPOCHS,\
                                         steps_per_epoch=BATCH_SIZE,\
-                                        callbacks=CALLBACKS,validation_data=valid_gen,\
-                                            validation_steps=10)
-    # model.save(f"../log/modelsave_{MODEL}_{TEST_FOLDS[0]}.p")
+                                        callbacks=CALLBACKS,validation_data=validation_generator)
+    model.save(f"../log/modelsave_{MODEL}_{TEST_FOLDS[0]}.p")
     with open(f'../log/trainHistoryDict_{MODEL}_{TEST_FOLDS[0]}.p', 'wb') as file_pi:
         pickle.dump(train_history.history, file_pi)
     
